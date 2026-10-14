@@ -1,0 +1,14 @@
+[Unit]
+Description=Demo CRUD Penguin (CSRF)
+After=network.target
+
+[Service]
+User=demo
+Group=demo
+EnvironmentFile=/etc/demo.env
+WorkingDirectory=/opt/penguin
+ExecStart=/usr/bin/python3 /opt/penguin/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

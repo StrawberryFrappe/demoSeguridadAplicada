@@ -1,0 +1,14 @@
+[Unit]
+Description=Demo Cola (Broken Auth / Session)
+After=network.target
+
+[Service]
+User=demo
+Group=demo
+EnvironmentFile=/etc/demo.env
+WorkingDirectory=/opt/cola
+ExecStart=/usr/bin/python3 /opt/cola/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

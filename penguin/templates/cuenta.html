@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editar cuenta - CRUD Penguin</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin:0; font-family: system-ui, sans-serif; color:#0b2a3a; background:#eafaff; }
+  header { background:#12b0e8; color:#fff; padding:1rem 1.6rem; }
+  header a { color:#e3f6ff; font-size:.85rem; }
+  main { max-width:520px; margin:1.8rem auto; padding:0 1.2rem; }
+  .card { background:#fff; border-radius:16px; box-shadow:0 8px 28px rgba(10,60,90,.12);
+          padding:1.5rem 1.7rem; }
+  label { display:block; font-size:.82rem; color:#5a7585; margin:.8rem 0 .25rem; }
+  input { width:100%; box-sizing:border-box; padding:.6rem .7rem; border:1px solid #bfe0ef;
+          border-radius:9px; font-size:.95rem; }
+  button { margin-top:1.2rem; padding:.65rem 1.4rem; border:0; border-radius:10px;
+           background:#12b0e8; color:#fff; font-size:.95rem; font-weight:600; cursor:pointer; }
+  .mode { font-size:.75rem; }
+</style>
+</head>
+<body>
+  <header><a href="/igloo">&larr; Volver al iglu</a> &nbsp; <span class="mode">modo: {{ mode }}</span></header>
+  <main>
+    <div class="card">
+      <h2 style="margin-top:0">Correo de recuperacion</h2>
+      <form method="post" action="/account/change-email">
+        <label>Correo actual</label>
+        <input value="{{ u.recovery_email }}" disabled>
+        <label>Nuevo correo</label>
+        <input name="new" placeholder="nuevo@correo.cl">
+        <!-- El token va siempre; en modo vuln el servidor lo ignora, en modo fixed lo exige -->
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <button type="submit">Guardar</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala de espera - Inscripcion de ramos</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin:0; font-family: system-ui, sans-serif; background:#eef2f6; color:#1b2733;
+         display:flex; min-height:100vh; align-items:center; justify-content:center; }
+  .card { background:#fff; padding:2.5rem 3rem; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.12);
+          text-align:center; max-width:460px; }
+  h1 { font-size:1.25rem; margin:.2rem 0 1.2rem; }
+  .pos { font-size:3rem; font-weight:700; color:#0a6cff; margin:.3rem 0; }
+  .bar { height:10px; background:#e2e8f0; border-radius:6px; overflow:hidden; margin:1.2rem 0; }
+  .bar > i { display:block; height:100%; width:5%; background:#0a6cff; transition:width .8s; }
+  p { color:#5a6b7b; font-size:.9rem; }
+  button { margin-top:1rem; padding:.7rem 1.6rem; border:0; border-radius:8px; background:#0a6cff;
+           color:#fff; font-size:1rem; cursor:pointer; }
+  button:disabled { background:#9db7d8; cursor:not-allowed; }
+  .mode { position:fixed; top:10px; right:12px; font-size:.75rem; padding:.25rem .6rem; border-radius:6px;
+          background:#1b2733; color:#fff; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+  <span class="mode">modo: {{ mode }}</span>
+  <div class="card">
+    <h1>Inscripcion de Ramos &mdash; Sala de Espera</h1>
+    <p>Estas en la fila. Mantente en esta pagina, tu lugar se guarda automaticamente.</p>
+    <div class="pos" id="pos">1.248</div>
+    <div class="bar"><i id="bar"></i></div>
+    <p id="msg">Tiempo estimado de espera: calculando&hellip;</p>
+    <button id="go" disabled>Ingresar al sistema</button>
+  </div>
+<script>
+  // Fachada de sala de espera (solo visual): baja la posicion y habilita el ingreso.
+  let pos = 1248, pct = 5;
+  const elPos = document.getElementById('pos'), elBar = document.getElementById('bar'),
+        elMsg = document.getElementById('msg'), btn = document.getElementById('go');
+  const t = setInterval(() => {
+    pos = Math.max(0, pos - Math.ceil(pos * 0.35));
+    pct = Math.min(100, pct + 30);
+    elPos.textContent = pos.toLocaleString('es-CL');
+    elBar.style.width = pct + '%';
+    if (pos === 0) {
+      clearInterval(t);
+      elMsg.textContent = 'Es tu turno.';
+      btn.disabled = false;
+    }
+  }, 900);
+  btn.onclick = () => location.href = '/login';
+</script>
+</body>
+</html>
