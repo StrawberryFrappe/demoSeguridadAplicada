@@ -87,18 +87,20 @@ def stop(procs):
 
 def run_penguin(mode):
     print(f"=== PENGUIN (CSRF) modo={mode} ===")
+    st, _, _ = req(8001, "GET", "/login")
+    check("sin sesion se muestra el login", st == 200)
     st, setc, _ = req(8001, "POST", "/login", body="usuario=pingu1&clave=hielo123")
     pc = cookie_from(setc, "pingu_sid")
     check("login 302 + cookie", st == 302 and pc is not None)
     if mode == "vuln":
         check("cookie SameSite=None + Secure",
               "SameSite=None" in (setc or "") and "Secure" in (setc or ""))
-        req(8001, "GET", "/account/change-email?new=atacante@evil.cl", cookie=pc)
-        _, _, body = req(8001, "GET", "/igloo", cookie=pc)
-        check("GET <img> cambia el correo", "atacante@evil.cl" in body)
-        req(8001, "POST", "/account/change-email", cookie=pc, body="new=post@evil.cl")
-        _, _, body = req(8001, "GET", "/igloo", cookie=pc)
-        check("POST sin token cambia el correo", "post@evil.cl" in body)
+        st, setc, _ = req(8001, "GET", "/account/change-email?new=atacante@evil.cl", cookie=pc)
+        check("GET del exploit no borra ni rota la cookie", st == 200 and setc is None)
+        check_penguin_session(pc, "atacante@evil.cl", "GET del exploit")
+        st, setc, _ = req(8001, "POST", "/account/change-email", cookie=pc, body="new=post@evil.cl")
+        check("POST del exploit no borra ni rota la cookie", st == 302 and setc is None)
+        check_penguin_session(pc, "post@evil.cl", "POST del exploit")
     else:
         check("cookie SameSite=Strict + HttpOnly",
               "SameSite=Strict" in (setc or "") and "HttpOnly" in (setc or ""))
@@ -114,6 +116,25 @@ def run_penguin(mode):
         _, _, body = req(8001, "GET", "/igloo", cookie=pc)
         check("POST con token valido funciona", st == 302 and "legit@correo.cl" in body)
         check("el correo nunca cambio al del atacante", "atacante@evil.cl" not in body)
+        check_penguin_session(pc, "legit@correo.cl", "cambio autorizado")
+
+    req(8001, "GET", "/logout", cookie=pc)
+    st, _, _ = req(8001, "GET", "/igloo", cookie=pc)
+    check("Salir sigue invalidando la sesion", st == 302)
+    st, _, _ = req(8001, "GET", "/login", cookie=pc)
+    check("despues de Salir se muestra el login", st == 200)
+
+
+def check_penguin_session(cookie, email, label):
+    st, _, body = req(8001, "GET", "/igloo", cookie=cookie)
+    check(f"{label}: mismo sid conserva el iglu con el correo actualizado",
+          st == 200 and "pingu1" in body and email in body)
+    st, _, body = req(8001, "GET", "/cuenta", cookie=cookie)
+    check(f"{label}: mismo sid conserva el acceso a la cuenta",
+          st == 200 and email in body)
+    st, setc, body = req(8001, "GET", "/login", cookie=cookie)
+    check(f"{label}: login vuelve al iglu sin pedir credenciales ni rotar cookie",
+          st == 302 and "/igloo" in body and setc is None)
 
 
 def run_cola(mode):
