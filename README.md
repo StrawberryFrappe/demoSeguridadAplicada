@@ -36,6 +36,11 @@ vagrant up        # crea y aprovisiona victim (.10) y attacker (.11)
 
 Credenciales: CRUD Penguin `pingu1/hielo123` · Inscripción `estudiante1/clave123`.
 
+La sala de espera tiene cinco usuarios hardcodeados (`estudiante1` a `estudiante5`).
+La cola nunca avanza: `estudiante1` (Ana Diaz) siempre tiene acceso y los otros
+cuatro quedan en espera, incluso despues de cerrar sesion o reiniciar la app.
+Intentar iniciar sesion con otro usuario devuelve **403**, en ambos modos.
+
 ## 3. Antes de la demo (3 cosas o no funciona)
 
 1. **Usa Chromium/Chrome** y permite cookies de terceros para el sitio víctima.
@@ -69,7 +74,7 @@ atado a la IP → la cookie robada devuelve **401**.
 ## 5. Pruebas
 
 ```bash
-./tests/run.sh     # levanta ambas apps en los 2 modos y verifica todo (17 checks)
+./tests/run.sh     # levanta ambas apps en los 2 modos y verifica la cola y los ataques
 ```
 
 ## 6. Estructura

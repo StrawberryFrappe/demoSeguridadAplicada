@@ -118,6 +118,22 @@ def run_penguin(mode):
 
 def run_cola(mode):
     print(f"=== COLA (Broken Auth) modo={mode} ===")
+    st, _, queue = req(8000, "GET", "/")
+    check("cola fija con cinco usuarios y solo uno con acceso",
+          st == 200 and all(f"estudiante{i}" in queue for i in range(1, 6))
+          and queue.count("Con acceso") == 1 and queue.count("En espera") == 4)
+    st, setc, _ = req(8000, "POST", "/login", body="usuario=estudiante1&clave=clave123")
+    first_cookie = cookie_from(setc, "sid")
+    st_dashboard, _, _ = req(8000, "GET", "/dashboard", cookie=first_cookie)
+    check("primer usuario tiene acceso inmediato", st == 302 and st_dashboard == 200)
+    req(8000, "GET", "/logout", cookie=first_cookie)
+    _, _, queue_after = req(8000, "GET", "/")
+    check("cerrar sesion y recargar no hace avanzar la cola", queue_after == queue)
+    for user, password in (("estudiante2", "panda2024"), ("estudiante3", "clave345"),
+                           ("estudiante4", "clave456"), ("estudiante5", "clave567")):
+        st, setc, body = req(8000, "POST", "/login", body=f"usuario={user}&clave={password}")
+        check(f"{user} sigue en espera al entrar directamente al login",
+              st == 403 and setc is None and "sigue en espera" in body)
     _, setc, _ = req(8000, "POST", "/login", body="usuario=estudiante1&clave=clave123")
     sid_val = cookie_from(setc, "sid").split("=", 1)[1]
     _, setc2, _ = req(8000, "POST", "/login", cookie="sid=ZZZpreset",
