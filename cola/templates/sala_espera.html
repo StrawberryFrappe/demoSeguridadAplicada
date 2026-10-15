@@ -12,17 +12,10 @@
           text-align:center; width:100%; max-width:560px; box-sizing:border-box; margin:1rem; }
   h1 { font-size:1.25rem; margin:.2rem 0 1.2rem; }
   .pos { font-size:3rem; font-weight:700; color:#0a6cff; margin:.3rem 0; }
-  .bar { height:10px; background:#e2e8f0; border-radius:6px; overflow:hidden; margin:1.2rem 0; }
-  .bar > i { display:block; height:100%; width:20%; background:#0a6cff; }
   p { color:#5a6b7b; font-size:.9rem; }
-  table { width:100%; border-collapse:collapse; margin:1.2rem 0; text-align:left; }
-  th,td { padding:.7rem .4rem; border-bottom:1px solid #e2e8f0; font-size:.85rem; }
-  th { color:#5a6b7b; }
-  .user { display:block; color:#5a6b7b; font-size:.75rem; margin-top:.2rem; }
-  .active { background:#edf8f0; }
-  .status { color:#237c41; font-weight:600; }
-  .entry { display:inline-block; margin-top:1rem; padding:.7rem 1.6rem; border-radius:8px;
-           background:#0a6cff; color:#fff; font-size:1rem; text-decoration:none; }
+  button { margin-top:1rem; padding:.7rem 1.6rem; border:0; border-radius:8px; background:#0a6cff;
+           color:#fff; font-size:1rem; cursor:pointer; }
+  button:disabled { background:#9db7d8; cursor:not-allowed; }
   .mode { position:fixed; top:10px; right:12px; font-size:.75rem; padding:.25rem .6rem; border-radius:6px;
           background:#1b2733; color:#fff; letter-spacing:.05em; }
 </style>
@@ -31,23 +24,43 @@
   <span class="mode">modo: {{ mode }}</span>
   <div class="card">
     <h1>Inscripcion de Ramos &mdash; Sala de Espera</h1>
-    <p>Cola fija: el primer usuario tiene acceso permanente. Los demas permanecen en espera.</p>
-    <div class="pos" id="pos">1</div>
-    <div class="bar"><i id="bar"></i></div>
-    <p id="msg">Turno de {{ queue[0].nombre }} ({{ queue[0].username }}).</p>
-    <table aria-label="Usuarios en la cola">
-      <thead><tr><th>Posicion</th><th>Usuario</th><th>Estado</th></tr></thead>
-      <tbody>
-        {% for user in queue %}
-        <tr{% if loop.first %} class="active"{% endif %}>
-          <td>{{ loop.index }}</td>
-          <td>{{ user.nombre }}<span class="user">{{ user.username }}</span></td>
-          <td{% if loop.first %} class="status"{% endif %}>{{ 'Con acceso' if loop.first else 'En espera' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <a class="entry" id="go" href="{{ url_for('login') }}">Ingresar como {{ queue[0].username }}</a>
+    <p>Estas en la fila. Mantente en esta pagina, tu lugar se guarda automaticamente.</p>
+    <div class="pos" id="pos">{{ state.position }}</div>
+    <p id="msg">Tiempo estimado de espera: calculando&hellip;</p>
+    <button id="go" disabled>Ingresar al sistema</button>
+    <noscript>
+      <p>Activa JavaScript o recarga esta pagina para consultar tu turno.</p>
+      {% if state.admitted %}<a href="/login">Ingresar al sistema</a>{% endif %}
+    </noscript>
   </div>
+<script>
+  const elPos = document.getElementById('pos'),
+        elMsg = document.getElementById('msg'), btn = document.getElementById('go');
+  function render(state) {
+    elPos.textContent = state.position.toLocaleString('es-CL');
+    btn.disabled = !state.admitted;
+    elMsg.textContent = state.admitted
+      ? 'Es tu turno. Tienes 2 minutos para completar el ingreso.'
+      : `Tiempo estimado de espera: ${state.eta_seconds} segundos.`;
+  }
+  async function poll() {
+    try {
+      const response = await fetch('/queue/status', { cache: 'no-store' });
+      if (response.status === 401) {
+        location.replace('/');
+        return;
+      }
+      if (!response.ok) throw new Error('No se pudo consultar el turno');
+      render(await response.json());
+    } catch (error) {
+      btn.disabled = true;
+      elMsg.textContent = 'No se pudo consultar tu turno. Reintentando...';
+    }
+    setTimeout(poll, 1000);
+  }
+  render({{ state | tojson }});
+  setTimeout(poll, 1000);
+  btn.onclick = () => location.href = '/login';
+</script>
 </body>
 </html>
