@@ -10,6 +10,7 @@ Uso:
 Sale con codigo 0 si todo pasa, 1 si algo falla.
 """
 import http.client
+import json
 import os
 import re
 import subprocess
@@ -61,7 +62,7 @@ def start(mode):
             os.remove(os.path.join(ROOT, db))
         except FileNotFoundError:
             pass
-    env = dict(os.environ, DEMO_MODE=mode)
+    env = dict(os.environ, DEMO_MODE=mode, QUEUE_INTERVAL="0.1")
     env.pop("TLS_CERT", None)
     env.pop("TLS_KEY", None)
     procs = [
@@ -139,25 +140,26 @@ def check_penguin_session(cookie, email, label):
 
 def run_cola(mode):
     print(f"=== COLA (Broken Auth) modo={mode} ===")
-    st, _, queue = req(8000, "GET", "/")
-    check("cola fija con cinco usuarios y solo uno con acceso",
-          st == 200 and all(f"estudiante{i}" in queue for i in range(1, 6))
-          and queue.count("Con acceso") == 1 and queue.count("En espera") == 4)
-    st, setc, _ = req(8000, "POST", "/login", body="usuario=estudiante1&clave=clave123")
-    first_cookie = cookie_from(setc, "sid")
-    st_dashboard, _, _ = req(8000, "GET", "/dashboard", cookie=first_cookie)
-    check("primer usuario tiene acceso inmediato", st == 302 and st_dashboard == 200)
-    req(8000, "GET", "/logout", cookie=first_cookie)
-    _, _, queue_after = req(8000, "GET", "/")
-    check("cerrar sesion y recargar no hace avanzar la cola", queue_after == queue)
-    for user, password in (("estudiante2", "panda2024"), ("estudiante3", "clave345"),
-                           ("estudiante4", "clave456"), ("estudiante5", "clave567")):
-        st, setc, body = req(8000, "POST", "/login", body=f"usuario={user}&clave={password}")
-        check(f"{user} sigue en espera al entrar directamente al login",
-              st == 403 and setc is None and "sigue en espera" in body)
-    _, setc, _ = req(8000, "POST", "/login", body="usuario=estudiante1&clave=clave123")
+    def enter_queue():
+        _, setc, _ = req(8000, "GET", "/")
+        ticket = cookie_from(setc, "queue_ticket")
+        for _ in range(100):
+            st, _, body = req(8000, "GET", "/queue/status", cookie=ticket)
+            if st == 200 and json.loads(body)["admitted"]:
+                return ticket
+            time.sleep(0.02)
+        raise RuntimeError("la cola no habilito el ingreso")
+
+    for method in ("GET", "POST"):
+        st, _, _ = req(8000, method, "/login", body="usuario=estudiante1&clave=clave123" if method == "POST" else None)
+        check(f"{method} /login sin turno bloqueado", st == 302)
+    ticket = enter_queue()
+    _, setc, _ = req(8000, "POST", "/login", cookie=ticket, body="usuario=estudiante1&clave=clave123")
     sid_val = cookie_from(setc, "sid").split("=", 1)[1]
-    _, setc2, _ = req(8000, "POST", "/login", cookie="sid=ZZZpreset",
+    st, _, _ = req(8000, "GET", "/queue/status", cookie=ticket)
+    check("el turno se consume al autenticar", st == 401)
+    ticket2 = enter_queue()
+    _, setc2, _ = req(8000, "POST", "/login", cookie=ticket2 + "; sid=ZZZpreset",
                       body="usuario=estudiante1&clave=clave123")
     sid_preset = cookie_from(setc2, "sid").split("=", 1)[1]
     if mode == "vuln":
@@ -172,6 +174,15 @@ def run_cola(mode):
         check("sid '1' NO da acceso (401)", st == 401)
         st, _, body = req(8000, "GET", "/whoami", cookie=f"sid={sid_val}")
         check("sid valido desde mismo origen funciona", st == 200 and "estudiante1" in body)
+
+    for user, password in (("estudiante2", "panda2024"), ("estudiante3", "clave345"),
+                           ("estudiante4", "clave456"), ("estudiante5", "clave567")):
+        ticket = enter_queue()
+        st, setc, _ = req(8000, "POST", "/login", cookie=ticket,
+                          body=f"usuario={user}&clave={password}")
+        sid = cookie_from(setc, "sid")
+        st_dashboard, _, _ = req(8000, "GET", "/dashboard", cookie=sid)
+        check(f"{user} puede ingresar al llegar su turno", st == 302 and sid is not None and st_dashboard == 200)
 
 
 def main():
