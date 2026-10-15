@@ -69,6 +69,8 @@ def set_session_cookie(resp, sid):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "GET" and current():
+        return redirect(url_for("igloo"))
     if request.method == "POST":
         row = db().execute(
             "SELECT * FROM users WHERE username=? AND password=?",

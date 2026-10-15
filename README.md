@@ -56,7 +56,10 @@ En otra pestaña abre el sitio del atacante (`:9000`):
 - **"Ver mi postal"** → un `<img>` dispara un GET y cambia el correo (el chiste).
 - **"Reclamar premio"** → un form oculto se auto-envía (POST), igual de efectivo.
 
-Recarga el iglú: el correo quedó en `atacante@evil.cl`.
+Recarga el iglú: el correo quedó en `atacante@evil.cl` y la misma sesión sigue
+abierta, sin volver a ingresar las credenciales. El ataque POST se envía a un
+iframe oculto para mantener la página del premio abierta. Si visitas `/login`
+con una sesión activa, vuelves directamente al iglú.
 Con `toggle-mode fixed` (y re-login) las dos páginas ya no cambian nada.
 
 **Broken Auth (modo `vuln`):** entra a inscripción (`:8000`), el dashboard muestra
