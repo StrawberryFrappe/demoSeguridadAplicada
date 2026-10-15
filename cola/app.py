@@ -25,6 +25,15 @@ DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cola.db")
 IDLE_TIMEOUT = 300       # 5 min sin actividad
 ABSOLUTE_TIMEOUT = 1800  # 30 min de vida maxima
 
+# Cola fija para la demo: solo el primer usuario tiene turno, incluso al salir.
+QUEUE_USERS = (
+    {"id": 1, "username": "estudiante1", "password": "clave123", "nombre": "Ana Diaz"},
+    {"id": 2, "username": "estudiante2", "password": "panda2024", "nombre": "Luis Soto"},
+    {"id": 3, "username": "estudiante3", "password": "clave345", "nombre": "Camila Rojas"},
+    {"id": 4, "username": "estudiante4", "password": "clave456", "nombre": "Diego Perez"},
+    {"id": 5, "username": "estudiante5", "password": "clave567", "nombre": "Sofia Torres"},
+)
+
 app = Flask(__name__)
 
 # Almacen de sesiones en memoria: sid -> {uid, user, nombre, ip, ua, created, last}
@@ -49,14 +58,17 @@ def init_db():
         """
     )
     if not c.execute("SELECT 1 FROM users").fetchone():
-        c.execute("INSERT INTO users VALUES(1,'estudiante1','clave123','Ana Diaz')")
-        c.execute("INSERT INTO users VALUES(2,'estudiante2','panda2024','Luis Soto')")
         c.executemany(
             "INSERT INTO ramos(uid,sigla,nombre) VALUES(?,?,?)",
             [(1, "IIC2113", "Diseno de Software"),
              (1, "MAT1610", "Calculo I"),
              (2, "IIC2233", "Programacion Avanzada")],
         )
+    c.executemany(
+        "INSERT OR IGNORE INTO users(id,username,password,nombre) "
+        "VALUES(:id,:username,:password,:nombre)",
+        QUEUE_USERS,
+    )
     c.commit()
     c.close()
 
@@ -85,7 +97,7 @@ def current():
 
 @app.route("/")
 def sala_espera():
-    return render_template("sala_espera.html", mode=MODE)
+    return render_template("sala_espera.html", mode=MODE, queue=QUEUE_USERS)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -98,6 +110,11 @@ def login():
         ).fetchone()
         if not row:
             return render_template("login.html", mode=MODE, error="Credenciales invalidas")
+        if row["username"] != QUEUE_USERS[0]["username"]:
+            return render_template(
+                "login.html", mode=MODE,
+                error="Tu usuario sigue en espera. Solo el primer usuario de la cola tiene acceso.",
+            ), 403
 
         now = time.time()
         if MODE == "vuln":
